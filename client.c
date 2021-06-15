@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <ctype.h>
 #define PORT 8080
 
 char sent[1024];
@@ -139,7 +140,7 @@ void find(){
 
 void lower(char arr[]){
     for (int i = 0; i<strlen(arr);i++){
-        tolower(arr[i]);
+        arr[i] = tolower(arr[i]);
     }
 }
 
@@ -190,27 +191,31 @@ int main(int argc, char const *argv[]) {
         char command[100];
         scanf("%s",command);
         lower(command);
+        printf("Command: %s\n",command);
+        //sends(command);
         if (strcmp(command,"create")==0){
             char create[100];
             scanf("%s",create);
             lower(create);
-            if (strcmp(command,"user")==0){
+            //sends(create);
+            printf("Create Type: %s\n",create);
+            if (strcmp(create,"user")==0){
                 char newUsername[100];
-                char newPassword[100];
                 scanf("%s",newUsername);
                 char passwordBuffer[100];
                 fgets(passwordBuffer,1024,stdin);
                 char * ptr = strstr(passwordBuffer,"IDENTIFIED BY");
-                ptr++;
-                strcpy(newPassword,passwordBuffer);
-                sprintf(sent,"%s %s",newUsername,newPassword);
+                ptr+=14;
+                printf("%s\n",ptr);
+                sprintf(sent,"%s;%s;%s;%s",command,create,newUsername,ptr);
+                printf("Parsed Command: %s\n",sent);
                 sends(sent);
             }
-            if (strcmp(command,"database")==0){
+            if (strcmp(create,"database")==0){
                 char create[100];
                 scanf("%s",create);
             }
-            if (strcmp(command,"table")==0){
+            if (strcmp(create,"table")==0){
                 char create[100];
                 scanf("%s",create);
             }
