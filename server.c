@@ -48,7 +48,7 @@ void reads() { // check Disconnects + Read vals
 }
 
 void readsCommand() { // check Disconnects + Read vals
-    resR();
+    memset(command,0,sizeof(command));
     int check;
     if ((check = read(sd,command,100)) == 0){
         connected=false;
@@ -62,20 +62,16 @@ void readsCommand() { // check Disconnects + Read vals
     }
 }
 
+void sends(char data[]) {
+    send(sd,data,strlen(data),0);
+    memset(sent,0,sizeof(sent));
+}
+
 int main(int argc, char const *argv[]) {  
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    FILE* dir = fopen("files.tsv","a");
-    fclose("files.tsv","a");
-
-    DIR* dir = opendir("files");
-    if (dir) {
-        closedir(dir);
-    } else if (ENOENT == errno) {
-        mkdir("files", 0777);
-    }
-      
+    
     if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
@@ -155,7 +151,17 @@ int main(int argc, char const *argv[]) {
         connected = true;
         while(connected) {
                 readsCommand();
+                printf("Command: %s\n",command);
                 
+                if(strcmp(command,"create")==0){
+                    readsCommand();
+                    printf("Create Type: %s\n",command);
+                    
+                    if(strcmp(command,"user")==0){
+                        reads(); 
+                        printf("Username & Pass: %s\n",recieve);
+                    }  
+                }
             }   
         }
     return 0;
