@@ -16,7 +16,7 @@ char recieve[1024];
 char buff[1024];
 bool loggedIn=false;
 int soc;
-
+bool useFlag = false;
 bool isSudo = false; 
 char username[100];
 char password[100];
@@ -98,17 +98,21 @@ int main(int argc, char const *argv[]) {
         if (strcmp(command,"create")==0){
             char create[100];
             scanf("%s",create);
-            lower(create);
+            lower(create);  
             //sends(create);
             printf("Create Type: %s\n",create);
             if (strcmp(create,"user")==0){
                 char newUsername[100];
                 scanf("%s",newUsername);
                 char passwordBuffer[100];
-                fgets(passwordBuffer,1024,stdin);
+                fgets(passwordBuffer,100,stdin);
                 char * ptr = strstr(passwordBuffer,"IDENTIFIED BY");
                 ptr+=14;
                 printf("%s\n",ptr);
+                if (ptr==NULL){
+                    printf("Wrong command!\n");
+                    continue;
+                }
                 sprintf(sent,"%s\t%s\t%s\t%s",command,create,newUsername,ptr);
                 printf("Parsed Command: %s\n",sent);
                 if(isSudo!=true){
@@ -118,6 +122,85 @@ int main(int argc, char const *argv[]) {
                 sends(sent);
                 reads();
             }
+            else if (strcmp(create,"database")==0){
+                char dbName[100];
+                scanf("%s",dbName);
+                sprintf(sent,"%s\t%s\t%s",command,create,dbName);
+                sends(sent);
+                reads();
+            }
+            else if (strcmp(create,"table")==0){
+                char tableName[100];
+                scanf("%s",tableName);
+                char argBuffer[200];
+                fgets(argBuffer,200,stdin);
+                char * ptr = strchr(argBuffer,'(');
+                ptr++;
+                ptr[strcspn(ptr,")")]=0;
+                sprintf(sent,"%s\t%s\t%s\t%s",command,create,tableName,ptr);
+                sends(sent);
+                reads();
+            }
+            else{
+                printf("Wrong command!\n");
+                continue;
+            }
+        }
+        else if (strcmp(command,"use")==0){
+            char dbName[100];
+            scanf("%s",dbName);
+            sprintf(sent,"%s\t%s",command,dbName);
+            sends(sent);
+            reads();
+            useFlag = true;
+        }
+        else if (strcmp(command,"grant")==0){
+            char permi[100];
+            scanf("%s",permi);
+            lower(permi);
+            if (strcmp(permi,"permission")==0){
+                char dbName[100];
+                scanf("%s",dbName);
+                char intoBuffer[100];
+                fgets(intoBuffer,100,stdin);
+                char * ptr = strstr(intoBuffer,"INTO");
+                ptr+=5;
+                printf("%s\n",ptr);
+                if (ptr==NULL){
+                    printf("Wrong command!\n");
+                    continue;
+                }
+                sprintf(sent,"%s\t%s\t%s\t%s",command,permi,dbName,ptr);
+                if(isSudo!=true){
+                    printf("Please use sudo!\n");
+                    continue;
+                }
+                sends(sent);
+                reads();
+            }
+        }
+        else if (strcmp(command,"insert")==0 && useFlag == true){
+            char into[100];
+            scanf("%s",into);
+            lower(into);
+            if (strcmp(into,"into")==0){
+                char tableName[100];
+                scanf("%s",tableName);
+                char argBuffer[200];
+                fgets(argBuffer,200,stdin);
+                char * ptr = strchr(argBuffer,'(');
+                ptr++;
+                ptr[strcspn(ptr,")")]=0;
+                printf("%s\n",ptr);
+                sprintf(sent,"%s\t%s\t%s\t%s",command,into,tableName,ptr);
+                sends(sent);
+                reads();
+            }
+        }
+        else if (strcmp(command,"drop")==0){
+            char create[100];
+            scanf("%s",create);
+            lower(create);  
             if (strcmp(create,"database")==0){
                 char dbName[100];
                 scanf("%s",dbName);
@@ -125,9 +208,49 @@ int main(int argc, char const *argv[]) {
                 sends(sent);
                 reads();
             }
-            if (strcmp(create,"table")==0){
-                char create[100];
-                scanf("%s",create);
+            else if (strcmp(create,"table")==0 && useFlag == true){
+                char tableName[100];
+                scanf("%s",tableName);
+                sprintf(sent,"%s\t%s\t%s",command,create,tableName);
+                sends(sent);
+                reads();
+            }
+            else if (strcmp(create,"column")==0 && useFlag == true){
+                char colName[100];
+                scanf("%s",colName);
+                char fromBuffer[100];
+                fgets(fromBuffer,100,stdin);
+                char * ptr = strstr(fromBuffer,"FROM");
+                ptr+=5;
+                printf("%s\n",ptr);
+                if (ptr==NULL){
+                    printf("Wrong command!\n");
+                    continue;
+                }
+                sprintf(sent,"%s\t%s\t%s\t%s",command,create,colName,ptr);
+                sends(sent);
+                reads();
+            }
+            else {
+                printf("Wrong command\n");
+                continue;
+            }
+        }
+        else if (strcmp(command,"delete")==0){
+            char create[100];
+            scanf("%s",create);
+            lower(create);
+            printf("%s\n",create);
+            if (strcmp(create,"from")==0 && useFlag == true){
+                char tableName[100];
+                scanf("%s",tableName);
+                sprintf(sent,"%s\t%s\t%s",command,create,tableName);
+                sends(sent);
+                reads();
+            }
+            else {
+                printf("Wrong command\n");
+                continue;
             }
         }
     }
