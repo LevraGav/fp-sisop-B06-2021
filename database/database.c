@@ -17,12 +17,16 @@
 #define PORT 8080
 
 char sent[1024];
+char username[100];
+char password[100];
+bool isSudo = false;
 char recieve[1024];
 char buff[1024];
 char user[30];
 char upass[100];
-char command[100];
+char command[1000];
 bool connected = false;
+const char databasePath[100] = "/home/bayu/Documents/FP/Database";
 int master_socket , new_socket , client_socket[30]= {0},max_clients = 30 , activity,max_sd, i , valread , sd; // GFG
 fd_set readfds;
 bool loggedIn = false;
@@ -38,6 +42,9 @@ void reads() { // check Disconnects + Read vals
     if ((check = read(sd,recieve,1024)) == 0){
         connected=false;
         loggedIn=false;
+        isSudo = false;
+        memset(username,0,sizeof(username));
+        memset(username,0,sizeof(password));
         close(sd);
         for(i=0;i<30;i++)
         {
@@ -53,6 +60,9 @@ void readsCommand() { // check Disconnects + Read vals
     if ((check = read(sd,command,100)) == 0){
         connected=false;
         loggedIn=false;
+        isSudo = false;
+        memset(username,0,sizeof(username));
+        memset(username,0,sizeof(password));
         close(sd);;
         for(i=0;i<30;i++)
         {
@@ -65,6 +75,33 @@ void readsCommand() { // check Disconnects + Read vals
 void sends(char data[]) {
     send(sd,data,strlen(data),0);
     memset(sent,0,sizeof(sent));
+}
+
+void createUser(char newUsername[],char newPassword[]){
+    FILE* file = fopen("/home/bayu/Documents/FP/Database/users.txt","a");
+    char idpass [200];
+    sprintf(idpass,"%s:%s",newUsername,newPassword);
+    fputs(idpass,file);
+    fputs("\n",file);
+    fclose(file);
+}
+void createDB(char dbName[]){
+    char path[200];
+    sprintf(path,"%s/%s",databasePath,dbName);
+    if( access( path, F_OK ) == 0 ) {
+        sends("Database already exist, please use another name!\n");
+    } 
+    else {
+        FILE* dbFile = fopen(path,"a");
+        fclose(dbFile);  
+        FILE* permission = fopen("/home/bayu/Documents/FP/Database/permissions.txt","a");
+        char permissions [300];
+        sprintf(permissions,"%s:%s:%s",username,password,dbName);
+        fputs(permissions,permission);
+        fputs("\n",permission);
+        fclose(permission);  
+    }
+
 }
 
 int main(int argc, char const *argv[]) {  
@@ -142,25 +179,50 @@ int main(int argc, char const *argv[]) {
                 {  
                     client_socket[i] = new_socket;  
                     printf("Adding to list of sockets as %d\n" , i);  
-                         
+                        
                     break;  
                 }  
             }  
         }
         sd = client_socket[0];
         connected = true;
+        reads();
+        sscanf(recieve,"%[^\t]\t%s",username,password);
+        if(strlen(username) == 0 && strlen(password) == 0){
+            isSudo = true;
+        }
+        if(!isSudo){
+            printf("%s:%s has connected\n",username,password);
+        }
+        else {
+            printf("Sudo has connected, All hail sudo!\n");
+        }
         while(connected) {
                 readsCommand();
                 printf("Command: %s\n",command);
-                
-                if(strcmp(command,"create")==0){
-                    readsCommand();
-                    printf("Create Type: %s\n",command);
-                    
-                    if(strcmp(command,"user")==0){
-                        reads(); 
-                        printf("Username & Pass: %s\n",recieve);
-                    }  
+                char arg1[100];
+                char arg2[100];
+                sscanf(command,"%[^\t]\t%s",arg1,arg2);
+                printf("Args: %s\n%s\n",arg1,arg2);
+                if (strcmp(arg1,"create")==0 && strcmp(arg2,"user")==0){
+                    unsigned int len = strlen(arg1) + strlen(arg2) + 2;
+                    char * ptr = command;
+                    ptr+=len;
+                    printf("%s\n",ptr);
+                    char newUsername[100];
+                    char newPassword[100];    
+                    sscanf(ptr,"%[^\t]\t%s",newUsername,newPassword);
+                    printf("Username:%s\tPassword:%s\n",newUsername,newPassword);
+                    createUser(newUsername,newPassword);
+                }
+                if (strcmp(arg1,"create")==0 && strcmp(arg2,"database")==0){
+                    unsigned int len = strlen(arg1) + strlen(arg2) + 2;
+                    char * ptr = command;
+                    ptr+=len;
+                    printf("%s\n",ptr);
+                    char dbName[100];
+                    sscanf(ptr,"%s",dbName);
+                    createDB(dbName);
                 }
             }   
         }
