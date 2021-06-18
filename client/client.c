@@ -21,41 +21,8 @@ bool isSudo = false;
 char username[100];
 char password[100];
 int checker=0;
-void Reg() {
-    read(soc,recieve,1024);
-    printf("%s\n",recieve);
-    memset(recieve,0,sizeof(recieve));
-    char uname[100];
-    char pass[100];
-    scanf("%s %s",uname,pass);
-    sprintf(sent,"%s:%s\n",uname,pass);
-    send(soc,sent,strlen(sent),0);
-    memset(sent,0,sizeof(sent));
-    read(soc,recieve,1024);
-    printf("%s\n",recieve);
-    memset(recieve,0,sizeof(recieve));
-}
 
-
-void Log() {
-    read(soc,recieve,1024);
-    printf("%s\n",recieve);
-    memset(recieve,0,sizeof(recieve));
-    char uname[100];
-    char pass[100];
-    scanf("%s %s",uname,pass);
-    sprintf(sent,"%s:%s\n",uname,pass);
-    send(soc,sent,strlen(sent),0);
-    memset(sent,0,sizeof(sent));
-    read(soc,recieve,1024);
-    printf("%s\n",recieve);
-    if(recieve[0]=='L'){
-        loggedIn=true;
-    }
-    memset(recieve,0,sizeof(recieve));
-}
-
-void resR() {
+void reads() {
     read(soc,recieve,1024);
     printf("%s\n",recieve);
     memset(recieve,0,sizeof(recieve));
@@ -66,77 +33,7 @@ void sends(char data[]) {
     memset(sent,0,sizeof(sent));
 }
 
-void addFiles() {
-    char temp[1024];
-    for (int i=0;i<3;i++) {
-        resR();
-        scanf("%s",temp);
-        temp[strcspn(temp,"\n")] =0;
-        sends(temp);
-    }
-    FILE *sfd = fopen(temp,"rb");  
-    char data[1024] = {0};
-    
-    while(1){
-        memset(data,0,1024);
-        size_t size = fread(data,sizeof(char),1024,sfd);
-        send(soc,data,1024,0);
-        break;
-    }
-    printf("break"); 
-    fclose(sfd);
-    resR();
-}
 
-void download() {
-    resR();
-    char temp[1024];
-    scanf("%s",temp);
-    temp[strcspn(temp,"\n")] =0;
-    sends(temp);
-    read(soc,recieve,1024);
-    printf("%s\n",recieve);
-    if (recieve[0]=='F') {
-        char dir[300] = "/home/bayu/Documents/Prak3/";
-        strcat(dir,temp);
-        FILE *file = fopen(dir,"w");
-        char buffer[4096]={0};
-        while (1) {
-            memset(buffer,0,sizeof(buffer));
-            int len = read(soc,buffer,4096); 
-            fprintf(file,"%s",buffer);
-            break;
-        }
-        printf("break\n");
-        fclose(file);
-    }
-}
-
-void delete() {
-    resR();
-    char temp[1024];
-    scanf("%s",temp);
-    temp[strcspn(temp,"\n")]=0;
-    sends(temp);
-    resR();
-}
-
-void see(){
-    char bigbuff[10000];
-    read (soc,bigbuff,10000);
-    printf("%s\n",bigbuff);
-    memset(bigbuff,0,sizeof(bigbuff));
-    
-}
-
-void find(){
-    printf("Tulis nama file anda\n");
-    char find[200] = {0};
-    scanf("%s",find);
-    find[strcspn(find,"\n")]=0;
-    sends(find);
-    resR();
-}
 
 void lower(char arr[]){
     for (int i = 0; i<strlen(arr);i++){
@@ -186,6 +83,11 @@ int main(int argc, char const *argv[]) {
         printf("\nConnection Failed \n");
         return -1;
     }
+    
+    memset(sent,0,sizeof(sent));
+    sprintf(sent,"%s\t%s",username,password);
+    printf("%s\n",sent);
+    sends(sent);
 
     while(1){
         char command[100];
@@ -207,13 +109,21 @@ int main(int argc, char const *argv[]) {
                 char * ptr = strstr(passwordBuffer,"IDENTIFIED BY");
                 ptr+=14;
                 printf("%s\n",ptr);
-                sprintf(sent,"%s;%s;%s;%s",command,create,newUsername,ptr);
+                sprintf(sent,"%s\t%s\t%s\t%s",command,create,newUsername,ptr);
                 printf("Parsed Command: %s\n",sent);
+                if(isSudo!=true){
+                    printf("Please use sudo!\n");
+                    continue;
+                }
                 sends(sent);
+                reads();
             }
             if (strcmp(create,"database")==0){
-                char create[100];
-                scanf("%s",create);
+                char dbName[100];
+                scanf("%s",dbName);
+                sprintf(sent,"%s\t%s\t%s",command,create,dbName);
+                sends(sent);
+                reads();
             }
             if (strcmp(create,"table")==0){
                 char create[100];
